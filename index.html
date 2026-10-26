@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Music Player</title>
+    <style>
+        :root {
+            --bg: #eef0f6;
+            --card: #fff;
+            --text: #1b1d24;
+            --muted: #7b8094;
+            --key: #eceef4;
+            --key-h: #dfe2ec;
+            --acc: #5b4cf0;
+            --acc-t: #fff;
+            --line: #d9dce8
+        }
+
+        @media (prefers-color-scheme:dark) {
+            :root {
+                --bg: #0f1117;
+                --card: #1a1d27;
+                --text: #f1f2f7;
+                --muted: #8a8fa3;
+                --key: #262a38;
+                --key-h: #31364a;
+                --acc: #7a6dff;
+                --line: #33384a
+            }
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            margin: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            display: grid;
+            place-items: center;
+            min-height: 100%;
+            padding: 16px
+        }
+
+        .player {
+            width: 100%;
+            max-width: 380px;
+            background: var(--card);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, .15)
+        }
+
+        .cover {
+            width: 100%;
+            aspect-ratio: 1.6;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            font-size: 3.5rem;
+            color: rgba(255, 255, 255, .9);
+            transition: background .4s
+        }
+
+        .cover.playing span {
+            animation: pulse 1.2s ease-in-out infinite
+        }
+
+        @keyframes pulse {
+            50% {
+                transform: scale(1.15)
+            }
+        }
+
+        .meta {
+            text-align: center;
+            margin: 16px 0 12px
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .artist {
+            color: var(--muted);
+            margin-top: 2px
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            background: linear-gradient(to right, var(--acc) var(--p, 0%), var(--line) var(--p, 0%))
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--acc);
+            border: 0
+        }
+
+        input[type=range]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--acc);
+            border: 0
+        }
+
+        .times {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: .8rem;
+            margin-top: 6px;
+            font-variant-numeric: tabular-nums
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            margin: 14px 0
+        }
+
+        button {
+            font: inherit;
+            border: 0;
+            cursor: pointer;
+            color: var(--text);
+            background: var(--key);
+            border-radius: 50%;
+            width: 46px;
+            height: 46px;
+            font-size: 1.1rem;
+            transition: transform .08s, background .15s
+        }
+
+        button:hover {
+            background: var(--key-h)
+        }
+
+        button:active {
+            transform: scale(.93)
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--acc);
+            outline-offset: 2px
+        }
+
+        button.play {
+            width: 64px;
+            height: 64px;
+            background: var(--acc);
+            color: var(--acc-t);
+            font-size: 1.5rem
+        }
+
+        button.play:hover {
+            background: var(--acc)
+        }
+
+        .vol {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .vol button {
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            flex: none
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 16px 0 8px
+        }
+
+        .row h2 {
+            font-size: .85rem;
+            margin: 0;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .06em
+        }
+
+        .pill {
+            width: auto;
+            height: auto;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: .8rem
+        }
+
+        .pill.on {
+            background: var(--acc);
+            color: var(--acc-t)
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer
+        }
+
+        li:hover {
+            background: var(--key)
+        }
+
+        li.current {
+            background: var(--key);
+            color: var(--acc);
+            font-weight: 600
+        }
+
+        li .n {
+            width: 1.2rem;
+            color: var(--muted);
+            font-size: .8rem;
+            text-align: center
+        }
+
+        li .t {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        li .t small {
+            display: block;
+            color: var(--muted);
+            font-weight: 400
+        }
+
+        li .d {
+            color: var(--muted);
+            font-size: .8rem;
+            font-variant-numeric: tabular-nums
+        }
+
+        .add {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: .85rem;
+            color: var(--acc);
+            cursor: pointer
+        }
+
+        .add input {
+            display: none
+        }
+    </style>
+</head>
+
+<body>
+    <main class="player">
+        <div class="cover" id="cover"><span>♪</span></div>
+        <div class="meta">
+            <div class="title" id="title">–</div>
+            <div class="artist" id="artist">–</div>
+        </div>
+
+        <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+        <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+
+        <div class="controls">
+            <button id="prev" aria-label="Previous">⏮&#xFE0E;</button>
+            <button id="play" class="play" aria-label="Play">▶&#xFE0E;</button>
+            <button id="next" aria-label="Next">⏭&#xFE0E;</button>
+        </div>
+
+        <div class="vol">
+            <button id="mute" aria-label="Mute">🔊&#xFE0E;</button>
+            <input type="range" id="vol" min="0" max="100" value="80" aria-label="Volume">
+        </div>
+
+        <div class="row">
+            <h2>Playlist</h2>
+            <button id="auto" class="pill on">Autoplay: on</button>
+        </div>
+        <ul id="list"></ul>
+        <label class="add">+ Add your own audio files
+            <input type="file" id="files" accept="audio/*" multiple>
+        </label>
+    </main>
+
+    <audio id="audio" preload="metadata"></audio>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+        const audio = $("audio");
+
+        /* ---------- Demo tracks (synthesized in the browser, so no downloads needed) ---------- */
+        const tracks = [
+            { title: "Sunrise Drive", artist: "Demo Synth", root: 261.63, notes: [0, 4, 7, 12, 7, 4, 9, 12, 7, 4, 2, 4], step: .25, wave: "sine", decay: 3, hue: 28, dur: 24 },
+            { title: "Midnight Rain", artist: "Luna Waves", root: 220.00, notes: [0, 3, 7, 10, 7, 3, 5, 8, 12, 8, 5, 3], step: .4, wave: "tri", decay: 2, hue: 235, dur: 24 },
+            { title: "Pixel Parade", artist: "8-Bit Orchard", root: 329.63, notes: [0, 0, 12, 0, 7, 0, 5, 0, 4, 4, 7, 12], step: .15, wave: "square", decay: 6, hue: 150, dur: 20 },
+            { title: "Slow Orbit", artist: "Echo Harbor", root: 196.00, notes: [0, 7, 12, 16, 12, 7, 5, 9, 14, 9, 5, 7], step: .5, wave: "saw", decay: 1.5, hue: 330, dur: 28 },
+        ];
+
+        function makeWav(t) {
+            const sr = 11025, total = Math.floor(t.dur * sr), data = new Int16Array(total);
+            const wave = {
+                sine: (p) => Math.sin(p),
+                tri: (p) => Math.asin(Math.sin(p)) * 2 / Math.PI,
+                square: (p) => Math.sin(p) >= 0 ? .4 : -.4,
+                saw: (p) => ((p / (2 * Math.PI)) % 1) * 2 - 1,
+            }[t.wave];
+            const stepLen = Math.floor(t.step * sr);
+            for (let i = 0; i < total; i++) {
+                const n = Math.floor(i / stepLen), local = (i % stepLen) / sr;
+                const f = t.root * Math.pow(2, t.notes[n % t.notes.length] / 12);
+                const env = Math.min(1, local / .01) * Math.exp(-local * t.decay);
+                const bass = n % 4 === 0 ? Math.sin(2 * Math.PI * (t.root / 2) * (i / sr)) * .25 * Math.exp(-local * 1.5) : 0;
+                const fade = Math.min(1, (total - i) / (sr * .5));
+                data[i] = Math.max(-1, Math.min(1, (wave(2 * Math.PI * f * (i / sr)) * env * .5 + bass) * fade)) * 32767;
+            }
+            const buf = new ArrayBuffer(44 + data.length * 2), v = new DataView(buf);
+            const str = (o, s) => [...s].forEach((c, k) => v.setUint8(o + k, c.charCodeAt(0)));
+            str(0, "RIFF"); v.setUint32(4, 36 + data.length * 2, true); str(8, "WAVEfmt ");
+            v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+            v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+            str(36, "data"); v.setUint32(40, data.length * 2, true);
+            new Int16Array(buf, 44).set(data);
+            let bin = ""; const bytes = new Uint8Array(buf);
+            for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+            return "data:audio/wav;base64," + btoa(bin);
+        }
+
+        /* ---------- Helpers ---------- */
+        const fmt = (s) => (!isFinite(s) || s < 0) ? "0:00" : Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+        const setFill = (el) => el.style.setProperty("--p", (el.value / el.max * 100) + "%");
+
+        let idx = 0, autoplay = true;
+
+        /* ---------- Playlist UI ---------- */
+        function renderList() {
+            const ul = $("list"); ul.textContent = "";
+            tracks.forEach((t, i) => {
+                const li = document.createElement("li");
+                if (i === idx) li.className = "current";
+                li.innerHTML = '<span class="n"></span><span class="t"><span></span><small></small></span><span class="d"></span>';
+                li.querySelector(".n").textContent = i === idx ? "♪" : i + 1;
+                li.querySelector(".t > span").textContent = t.title;
+                li.querySelector("small").textContent = t.artist;
+                li.querySelector(".d").textContent = t.dur ? fmt(t.dur) : "–";
+                li.addEventListener("click", () => load(i, true));
+                ul.appendChild(li);
+            });
+        }
+
+        /* ---------- Core controls ---------- */
+        function load(i, play) {
+            idx = (i + tracks.length) % tracks.length;
+            const t = tracks[idx];
+            if (!t.src) t.src = makeWav(t);
+            audio.src = t.src;
+            $("title").textContent = t.title;
+            $("artist").textContent = t.artist;
+            $("cover").style.background = `linear-gradient(135deg, hsl(${t.hue} 80% 55%), hsl(${t.hue + 50} 80% 40%))`;
+            $("seek").value = 0; setFill($("seek"));
+            $("cur").textContent = "0:00"; $("dur").textContent = fmt(t.dur);
+            renderList();
+            if (play) audio.play().catch(() => { });
+        }
+
+        const toggle = () => audio.paused ? audio.play().catch(() => { }) : audio.pause();
+        const next = (play = !audio.paused) => load(idx + 1, play);
+        const prev = () => audio.currentTime > 3 ? (audio.currentTime = 0) : load(idx - 1, !audio.paused);
+
+        $("play").onclick = toggle;
+        $("next").onclick = () => next();
+        $("prev").onclick = prev;
+
+        audio.addEventListener("play", () => { $("play").textContent = "⏸\uFE0E"; $("cover").classList.add("playing"); });
+        audio.addEventListener("pause", () => { $("play").textContent = "▶\uFE0E"; $("cover").classList.remove("playing"); });
+
+        audio.addEventListener("loadedmetadata", () => {
+            if (isFinite(audio.duration)) { tracks[idx].dur = audio.duration; $("dur").textContent = fmt(audio.duration); renderList(); }
+        });
+
+        /* ---------- Progress bar ---------- */
+        let seeking = false;
+        audio.addEventListener("timeupdate", () => {
+            $("cur").textContent = fmt(audio.currentTime);
+            if (!seeking && audio.duration) { $("seek").value = audio.currentTime / audio.duration * 1000; setFill($("seek")); }
+        });
+        $("seek").addEventListener("input", (e) => {
+            seeking = true; setFill(e.target);
+            if (audio.duration) $("cur").textContent = fmt(e.target.value / 1000 * audio.duration);
+        });
+        $("seek").addEventListener("change", (e) => {
+            if (audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration;
+            seeking = false;
+        });
+
+        /* ---------- Volume ---------- */
+        function setVolume(v) {
+            audio.volume = v / 100; audio.muted = v === 0;
+            $("mute").textContent = (audio.muted ? "🔇" : "🔊") + "\uFE0E";
+            setFill($("vol"));
+        }
+        $("vol").addEventListener("input", (e) => setVolume(+e.target.value));
+        $("mute").onclick = () => {
+            audio.muted = !audio.muted;
+            $("mute").textContent = (audio.muted ? "🔇" : "🔊") + "\uFE0E";
+        };
+
+        /* ---------- Autoplay (play the next track when one ends) ---------- */
+        $("auto").onclick = () => {
+            autoplay = !autoplay;
+            $("auto").textContent = "Autoplay: " + (autoplay ? "on" : "off");
+            $("auto").classList.toggle("on", autoplay);
+        };
+        audio.addEventListener("ended", () => {
+            if (autoplay) next(true);
+            else if (idx < tracks.length - 1) load(idx + 1, false);
+            else load(0, false);
+        });
+
+        /* ---------- Add local files ---------- */
+        $("files").addEventListener("change", (e) => {
+            const first = tracks.length;
+            for (const f of e.target.files) {
+                tracks.push({ title: f.name.replace(/\.[^.]+$/, ""), artist: "Local file", src: URL.createObjectURL(f), hue: Math.floor(Math.random() * 360), dur: 0 });
+            }
+            if (tracks.length > first) load(first, true);
+            e.target.value = "";
+        });
+
+        /* ---------- Keyboard: Space = play/pause, ← → = seek 5s, ↑ ↓ = volume, N / P = next / previous ---------- */
+        document.addEventListener("keydown", (e) => {
+            if (e.target.type === "range" || e.target.type === "file" || e.ctrlKey || e.metaKey || e.altKey) return;
+            const k = e.key;
+            if (k === " ") { e.preventDefault(); toggle(); }
+            else if (k === "ArrowRight") audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 5);
+            else if (k === "ArrowLeft") audio.currentTime = Math.max(0, audio.currentTime - 5);
+            else if (k === "ArrowUp" || k === "ArrowDown") {
+                e.preventDefault();
+                const v = Math.max(0, Math.min(100, +$("vol").value + (k === "ArrowUp" ? 5 : -5)));
+                $("vol").value = v; setVolume(v);
+            }
+            else if (k === "n" || k === "N") next();
+            else if (k === "p" || k === "P") prev();
+        });
+
+        setVolume(80);
+        load(0, false);
+    </script>
+</body>
+
+</html>
